@@ -1,0 +1,4 @@
+.env
+
+/django/venv
+/django/devopshw2/__pycache__
