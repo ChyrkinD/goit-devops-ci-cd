@@ -17,15 +17,43 @@ This project provisions a basic AWS infrastructure using Terraform modules for:
 
 ## Usage
 
+### Step 1: Bootstrap with Local Backend
+
+The project starts with a **local backend** to avoid the bootstrap problem (you can't use S3 backend before the S3 bucket exists). Run:
+
 ```bash
 terraform init
 terraform plan
 terraform apply
+```
+
+This creates:
+
+- S3 bucket for state files
+- DynamoDB table for state locking
+- VPC with public/private subnets
+- NAT Gateway for outbound traffic
+- ECR repository for container images
+
+### Step 2: Migrate to S3 Backend (Optional)
+
+After the infrastructure is created, you can move your state to S3 for production use:
+
+1. **Update `backend.tf`**: Uncomment the S3 backend block and comment out the local backend
+2. **Reinitialize Terraform**:
+   ```bash
+   terraform init -migrate-state
+   ```
+3. **Confirm the migration** when prompted
+
+### Destroy Infrastructure
+
+```bash
 terraform destroy
 ```
 
-## Module overview
+## Security Features
 
-- `s3-backend` creates the S3 bucket used to store Terraform state and the DynamoDB table used to lock state files.
-- `vpc` creates a VPC with 3 public subnets, 3 private subnets, an Internet Gateway, and a NAT Gateway.
-- `ecr` creates an ECR repository with image scanning enabled on push.
+- **S3 bucket**: Encrypted with AES256, versioning enabled, public access blocked, old versions auto-expire
+- **ECR repository**: Access restricted to your AWS account only, image scanning enabled, lifecycle policy removes old images
+- **DynamoDB**: Prevents concurrent state modifications with locking
