@@ -1,3 +1,6 @@
+# Отримуємо інформацію про поточний AWS акаунт
+data "aws_caller_identity" "current" {}
+
 resource "aws_ecr_repository" "this" {
   name                 = var.ecr_name
   image_tag_mutability = "MUTABLE"
@@ -12,17 +15,18 @@ resource "aws_ecr_repository" "this" {
   }
 }
 
+# Обмежуємо доступ до ECR репозиторію тільки для поточного AWS акаунту
 resource "aws_ecr_repository_policy" "this" {
   repository = aws_ecr_repository.this.name
 
   policy = jsonencode({
-    Version = "2008-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "AllowPullPush"
+        Sid    = "AllowAccountAccess"
         Effect = "Allow"
         Principal = {
-          AWS = "*"
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
         }
         Action = [
           "ecr:BatchCheckLayerAvailability",
@@ -35,6 +39,42 @@ resource "aws_ecr_repository_policy" "this" {
           "ecr:PutImage",
           "ecr:UploadLayerPart"
         ]
+      }
+    ]
+  })
+}
+
+# Налаштовуємо Life Cycle Policy для автоматичного видалення застарілих образів
+resource "aws_ecr_lifecycle_policy" "this" {
+  repository = aws_ecr_repository.this.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 tagged images"
+        selection = {
+          tagStatus     = "tagged"
+          tagPrefixList = ["v"]
+          countType     = "imageCountMoreThan"
+          countNumber   = 10
+        }
+        action = {
+          type = "expire"
+        }
+      },
+      {
+        rulePriority = 2
+        description  = "Remove untagged images after 7 days"
+        selection = {
+          tagStatus   = "untagged"
+          countType   = "sinceImagePushed"
+          countUnit   = "days"
+          countNumber = 7
+        }
+        action = {
+          type = "expire"
+        }
       }
     ]
   })
