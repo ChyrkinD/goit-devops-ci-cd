@@ -1,0 +1,13 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Variables (may contain secrets)
+*.tfvars
+*.tfvars.json
+!example.tfvars
+
+.env
