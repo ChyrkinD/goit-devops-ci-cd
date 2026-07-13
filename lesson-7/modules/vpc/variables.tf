@@ -23,3 +23,15 @@ variable "vpc_name" {
   type        = string
 }
 
+variable "endpoint_private_access" {
+  description = "Enable private access for VPC endpoints"
+  type        = bool
+  default     = true
+}
+
+variable "endpoint_public_access" {
+  description = "Enable public access for VPC endpoints"
+  type        = bool
+  default     = true
+}
+

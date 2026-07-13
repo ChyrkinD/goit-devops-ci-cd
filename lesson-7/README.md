@@ -2,15 +2,23 @@
 
 This folder contains Terraform modules and a Helm chart to deploy the Django application to an EKS cluster in the same VPC created earlier.
 
-Requirements
+## What changed
+
+- Added the EKS module to the Terraform root configuration.
+- Restored the S3 backend configuration for remote Terraform state.
+- Enabled private/public VPC endpoint access in the VPC module.
+- Made ECR encryption explicit with AES256.
+- Added CPU/memory requests and liveness/readiness/startup probes to the Helm chart.
+
+## Requirements
 
 - AWS CLI configured with credentials
 - kubectl and helm installed
 - Docker installed for building images
 
-Quick workflow
+## Quick workflow
 
-1. Bootstrap Terraform (local backend) and create infra (ECR + EKS skeleton)
+1. Bootstrap Terraform and create infra:
 
 ```bash
 cd lesson-7
@@ -19,39 +27,31 @@ terraform plan
 terraform apply
 ```
 
-2. Build and push Django Docker image to ECR:
+2. Build and push the Django image to ECR:
 
 ```bash
-# replace <ECR_URL> with terraform output or AWS console value
 ./scripts/build-and-push.sh <ECR_URL> v1
 ```
 
-3. Configure kubectl (use Terraform outputs):
+3. Configure kubectl:
 
 ```bash
-aws eks update-kubeconfig --region eu-north-1 --name $(terraform output -raw eks_cluster_name)
+aws eks update-kubeconfig --region eu-north-1 --name $(terraform output -raw cluster_name)
 ```
 
-4. Deploy the application with Helm (set image values):
+4. Deploy the application with Helm:
 
 ```bash
-helm install django-app ./charts/django-app --set image.repository=<ECR_URL>,image.tag=v1
+helm upgrade --install django-app ./charts/django-app \
+  --set image.repository=<ECR_URL> \
+  --set image.tag=v1
 ```
 
-Files of interest
+## Files of interest
 
-- `main.tf` - root terraform wiring
-- `backend.tf` - local backend for bootstrap
-- `modules/ecr` - creates ECR repository
-- `modules/eks` - creates EKS cluster and managed node group (requires existing VPC subnets)
-- `charts/django-app` - Helm chart (Deployment, Service, ConfigMap, HPA)
-- `scripts/build-and-push.sh` - helper to push Docker image to ECR
-
-ConfigMap / env
-
-- `charts/django-app/values.yaml` contains example environment variables under `env` which are rendered into a `ConfigMap` and injected into pods with `envFrom`.
-
-Notes
-
-- The EKS module expects `subnet_ids` from the existing VPC (private subnets recommended for nodes).
-- After the resources are created, set `image.repository` to the ECR repo URL and deploy via Helm.
+- main.tf - root Terraform wiring
+- backend.tf - S3 backend configuration for remote state
+- modules/ecr - creates the ECR repository with AES256 encryption
+- modules/eks - creates the EKS cluster and managed node group
+- charts/django-app - Helm chart with Deployment, Service, ConfigMap, HPA, and probes
+- scripts/build-and-push.sh - helper to push the image to ECR

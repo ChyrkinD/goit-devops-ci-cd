@@ -11,3 +11,5 @@
 !example.tfvars
 
 .env
+
+sts get-caller-identity --output json

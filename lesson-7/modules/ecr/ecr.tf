@@ -9,9 +9,13 @@ resource "aws_ecr_repository" "this" {
     scan_on_push = var.scan_on_push
   }
 
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
   tags = {
     Name        = var.ecr_name
-    Environment = "lesson-5"
+    Environment = "lesson-7"
   }
 }
 

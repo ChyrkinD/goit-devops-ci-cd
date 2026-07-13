@@ -63,7 +63,9 @@ resource "aws_eks_cluster" "this" {
   role_arn = aws_iam_role.eks_cluster.arn
 
   vpc_config {
-    subnet_ids = var.subnet_ids
+    subnet_ids              = var.subnet_ids
+    endpoint_private_access = true
+    endpoint_public_access  = true
   }
 
   depends_on = [aws_iam_role_policy_attachment.cluster_AmazonEKSClusterPolicy]
@@ -87,15 +89,4 @@ resource "aws_eks_node_group" "ng" {
   depends_on = [aws_iam_role_policy_attachment.node_AmazonEKSWorkerNodePolicy]
 }
 
-# Outputs
-output "cluster_name" {
-  value = aws_eks_cluster.this.name
-}
 
-output "cluster_endpoint" {
-  value = aws_eks_cluster.this.endpoint
-}
-
-output "cluster_certificate_authority_data" {
-  value = aws_eks_cluster.this.certificate_authority[0].data
-}
