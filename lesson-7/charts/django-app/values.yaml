@@ -1,0 +1,22 @@
+image:
+  repository: "" # to be filled with ECR repository URL
+  tag: "latest"
+
+service:
+  type: LoadBalancer
+  port: 8000
+
+replicaCount: 2
+
+env:
+  POSTGRES_HOST: "db"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "django_db"
+  POSTGRES_USER: "django_user"
+  POSTGRES_PASSWORD: "pass9764gd"
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
