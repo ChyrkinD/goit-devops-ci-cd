@@ -1,0 +1,36 @@
+controller:
+  adminUser: "admin"
+  adminPassword: "admin123"
+  serviceType: LoadBalancer
+  installPlugins:
+    - kubernetes:4203.v1d2f3e4b_9f2d
+    - workflow-aggregator:600.vb_57cdd3f5b_4e
+    - git:5.3.0
+    - credentials-binding:687.v4b_6f6d3b_0b_6a
+    - docker-workflow:580.vc5b_60ee0b_0f9
+    - blueocean:1.27.0
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  JCasC:
+    enabled: true
+    defaultConfig: true
+    configScripts:
+      credentials: |
+        credentials:
+          system:
+            domainCredentials:
+              - domain:
+                  name: "global"
+                  description: "Global domain"
+                credentials:
+                  - usernamePassword:
+                      scope: GLOBAL
+                      id: "aws-creds"
+                      username: "admin"
+                      password: "admin123"
+                      description: "AWS credentials"

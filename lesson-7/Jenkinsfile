@@ -1,0 +1,53 @@
+pipeline {
+  agent any
+
+  environment {
+    AWS_REGION = 'eu-north-1'
+    ECR_REPOSITORY = 'lesson-5-ecr'
+    IMAGE_TAG = "${env.BUILD_ID}"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Build and Push Docker image') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+          sh '''
+            aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+            aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+            aws configure set region "$AWS_REGION"
+            aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" --region "$AWS_REGION" || aws ecr create-repository --repository-name "$ECR_REPOSITORY" --region "$AWS_REGION"
+            aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com
+            docker build -t "$ECR_REPOSITORY:$IMAGE_TAG" ./lesson-7/django
+            docker tag "$ECR_REPOSITORY:$IMAGE_TAG" "$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG"
+            docker push "$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG"
+          '''
+        }
+      }
+    }
+
+    stage('Update Helm values') {
+      steps {
+        sh '''
+          git config user.email "jenkins@example.com"
+          git config user.name "Jenkins"
+          python3 - <<'PY'
+import os, pathlib
+path = pathlib.Path('lesson-7/charts/django-app/values.yaml')
+text = path.read_text()
+text = text.replace('tag: "latest"', f'tag: "{os.environ["IMAGE_TAG"]}"')
+path.write_text(text)
+PY
+          git add lesson-7/charts/django-app/values.yaml
+          git commit -m "Update image tag to ${IMAGE_TAG}" || true
+          git push origin HEAD:main || true
+        '''
+      }
+    }
+  }
+}

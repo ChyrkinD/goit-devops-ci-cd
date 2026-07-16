@@ -51,3 +51,15 @@ module "eks" {
   max_size                  = 6
   aws_region                = "eu-north-1"
 }
+
+module "jenkins" {
+  source        = "./modules/jenkins"
+  namespace     = "ci"
+  chart_version = "5.0.16"
+}
+
+module "argo_cd" {
+  source        = "./modules/argo_cd"
+  namespace     = "argocd"
+  chart_version = "7.8.11"
+}

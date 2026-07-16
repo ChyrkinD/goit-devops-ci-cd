@@ -18,3 +18,13 @@ output "ecr_repository_url" {
   value       = module.ecr.repository_url
 }
 
+output "jenkins_release_name" {
+  description = "Назва Helm release для Jenkins"
+  value       = module.jenkins.jenkins_release_name
+}
+
+output "argocd_release_name" {
+  description = "Назва Helm release для Argo CD"
+  value       = module.argo_cd.argocd_release_name
+}
+

@@ -1,0 +1,5 @@
+{
+    "BucketArn": "arn:aws:s3:::terraform-state-bucket-chyrkin",
+    "BucketRegion": "eu-north-1",
+    "AccessPointAlias": false
+}
