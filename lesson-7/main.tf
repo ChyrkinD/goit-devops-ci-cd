@@ -83,3 +83,23 @@ module "argo_cd" {
 
   depends_on = [module.eks]
 }
+
+# Підключаємо універсальний модуль RDS (Приклад використання)
+module "rds" {
+  source = "./modules/rds"
+
+  use_aurora  = false
+  db_name     = "djangodb"
+  db_username = "dbadmin"
+  db_password = "SuperSecretPassword123!" # В реальному проєкті використовуйте Secrets Manager або змінні оточення
+
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnets
+
+  engine         = "postgres"
+  engine_version = "15.4"
+  instance_class = "db.t3.micro"
+
+  allocated_storage   = 20
+  allowed_cidr_blocks = ["10.0.0.0/16"]
+}
