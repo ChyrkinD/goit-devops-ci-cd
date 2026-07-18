@@ -41,7 +41,7 @@ variable "engine" {
 variable "engine_version" {
   description = "Версія рушія бази даних"
   type        = string
-  default     = "15.4"
+  default     = "15.15"
 }
 
 variable "instance_class" {

@@ -24,7 +24,7 @@ module "rds" {
   subnet_ids     = module.vpc.private_subnets
 
   engine         = "postgres"
-  engine_version = "15.4"
+  engine_version = "15.15"
   instance_class = "db.t3.micro"
   
   allocated_storage = 20

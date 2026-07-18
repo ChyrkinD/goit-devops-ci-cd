@@ -41,8 +41,9 @@ resource "aws_db_parameter_group" "rds" {
   family = "postgres15" # Залежить від engine_version, припускаємо postgres15
 
   parameter {
-    name  = "max_connections"
-    value = "100"
+    name         = "max_connections"
+    value        = "100"
+    apply_method = "pending-reboot"
   }
 
   parameter {
