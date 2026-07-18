@@ -79,3 +79,18 @@ kubectl get applications -n argocd
 4. Argo CD syncs the updated Helm chart into the cluster.
 
 This completes the CI/CD loop from code change to deployment.
+
+terraform fmt -recursive
+terraform init
+terraform validate
+![alt text](image.png)
+
+terraform plan
+![alt text](image-1.png)
+
+helm lint charts/django-app
+helm lint modules/argo_cd/charts
+![alt text](image-2.png)
+
+grep -R "admin123\|pass9764gd" --include="_.yaml" --include="_.tf" .
+![alt text](image-3.png)

@@ -6,15 +6,3 @@ terraform {
     }
   }
 }
-
-provider "helm" {
-  kubernetes {
-    config_path = var.kubeconfig_path
-  }
-}
-
-variable "kubeconfig_path" {
-  description = "Path to kubeconfig for the EKS cluster"
-  type        = string
-  default     = "~/.kube/config"
-}

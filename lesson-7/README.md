@@ -19,41 +19,34 @@ This folder contains Terraform modules, Jenkins/Argo CD installation assets, and
 - Docker installed for building images
 - Terraform >= 1.5
 
-## Quick workflow
+## Як застосувати Terraform
 
-1. Bootstrap Terraform and create infra:
-
+1. Ініціалізація та застосування інфраструктури:
 ```bash
 cd lesson-7
 terraform init
 terraform plan
-terraform apply
+terraform apply -auto-approve
 ```
 
-2. Configure kubectl:
+## Як перевірити Jenkins job
 
-```bash
-aws eks update-kubeconfig --region eu-north-1 --name $(terraform output -raw cluster_name)
-```
+1. Увійдіть у веб-інтерфейс Jenkins, використовуючи дані (URL та пароль), які можна отримати з `terraform output`.
+2. Створіть новий Pipeline job (New Item -> Pipeline).
+3. В налаштуваннях job:
+   - Вкажіть `Pipeline script from SCM` (з Git).
+   - Вкажіть ваш Git-репозиторій, де зберігається код з цього завдання (`Jenkinsfile`).
+   - Налаштуйте Credentials для доступу до вашого Git (ідентифікатор: `github-credentials` з логіном та паролем/токеном Github).
+4. Запустіть збірку (Build Now).
+5. Пайплайн використовує Kaniko (в Kubernetes агенті) для збирання Docker образу з папки `django`, публікує його в AWS ECR та автоматично комітить оновлений тег (`charts/django-app/values.yaml`) у ваш Git-репозиторій.
 
-3. Deploy the application with Helm:
+## Як побачити результат в Argo CD
 
-```bash
-helm upgrade --install django-app ./charts/django-app \
-  --set image.repository=$(terraform output -raw ecr_repository_url) \
-  --set image.tag=v1
-```
-
-4. Jenkins pipeline:
-
-- Create a pipeline job in Jenkins pointing to the included Jenkinsfile.
-- Provide AWS credentials under the `aws-creds` ID.
-- The pipeline builds the image, pushes it to ECR, and updates the Helm values tag.
-
-5. Argo CD:
-
-- Install Argo CD via Terraform module.
-- Point the application manifest in the Argo CD chart to the target Git repository containing the Helm chart.
+1. Отримайте пароль адміністратора та URL Argo CD з `terraform output`.
+2. Відкрийте Argo CD UI і увійдіть як `admin`.
+3. Оскільки Argo CD налаштовано через Helm Chart, він автоматично створить Application для `django-app`.
+4. Argo CD буде автоматично відслідковувати зміни у вашому Git-репозиторії. Після того як Jenkins оновить тег у `values.yaml` та зробить пуш, Argo CD підхопить зміни (через `syncPolicy.automated`) і оновить Deployment у кластері (EKS).
+5. Перевірте, що стан застосунку став `Healthy` та `Synced`.
 
 ## Files of interest
 

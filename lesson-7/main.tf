@@ -6,11 +6,27 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.15"
+    }
   }
 }
 
 provider "aws" {
   region = "eu-north-1"
+}
+
+data "aws_eks_cluster_auth" "cluster" {
+  name = module.eks.cluster_name
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    token                  = data.aws_eks_cluster_auth.cluster.token
+  }
 }
 
 # Підключаємо модуль для S3 та DynamoDB
@@ -56,10 +72,14 @@ module "jenkins" {
   source        = "./modules/jenkins"
   namespace     = "ci"
   chart_version = "5.0.16"
+
+  depends_on = [module.eks]
 }
 
 module "argo_cd" {
   source        = "./modules/argo_cd"
   namespace     = "argocd"
   chart_version = "7.8.11"
+
+  depends_on = [module.eks]
 }

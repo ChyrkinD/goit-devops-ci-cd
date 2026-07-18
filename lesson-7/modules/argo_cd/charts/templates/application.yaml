@@ -12,8 +12,8 @@ spec:
   destination:
     server: {{ .destination.server }}
     namespace: {{ .destination.namespace }}
+{{- if .syncPolicy }}
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    {{- toYaml .syncPolicy | nindent 4 }}
+{{- end }}
 {{- end }}

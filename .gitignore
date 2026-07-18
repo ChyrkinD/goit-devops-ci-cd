@@ -12,4 +12,8 @@
 
 .env
 
+# Temporary files and downloaded binaries
+get_helm.sh
+kubectl
+ubprocess, json
 sts get-caller-identity --output json

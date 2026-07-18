@@ -1,52 +1,88 @@
 pipeline {
-  agent any
+  agent {
+    kubernetes {
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          labels:
+            jenkins/jenkins-jenkins-agent: true
+        spec:
+          serviceAccountName: default
+          containers:
+          - name: kaniko
+            image: gcr.io/kaniko-project/executor:debug
+            command:
+            - cat
+            tty: true
+            volumeMounts:
+            - name: docker-config
+              mountPath: /kaniko/.docker
+          - name: git
+            image: alpine/git:latest
+            command:
+            - cat
+            tty: true
+          volumes:
+          - name: docker-config
+            emptyDir: {}
+      '''
+    }
+  }
 
   environment {
     AWS_REGION = 'eu-north-1'
+    AWS_ACCOUNT_ID = '123456789012' // Please change this to your AWS Account ID
+    ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
     ECR_REPOSITORY = 'lesson-5-ecr'
     IMAGE_TAG = "${env.BUILD_ID}"
+    GIT_REPO_URL = 'https://github.com/example/argocd-demo.git' // Please change this to your repo URL
   }
 
   stages {
     stage('Checkout') {
       steps {
-        checkout scm
+        container('git') {
+          git url: "${GIT_REPO_URL}", branch: 'main'
+        }
       }
     }
 
-    stage('Build and Push Docker image') {
+    stage('Build and Push') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+        container('kaniko') {
           sh '''
-            aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
-            aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
-            aws configure set region "$AWS_REGION"
-            aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" --region "$AWS_REGION" || aws ecr create-repository --repository-name "$ECR_REPOSITORY" --region "$AWS_REGION"
-            aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com
-            docker build -t "$ECR_REPOSITORY:$IMAGE_TAG" ./lesson-7/django
-            docker tag "$ECR_REPOSITORY:$IMAGE_TAG" "$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG"
-            docker push "$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG"
+            /kaniko/executor \
+              --context `pwd`/lesson-7/django \
+              --dockerfile `pwd`/lesson-7/django/Dockerfile \
+              --destination ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
           '''
         }
       }
     }
 
-    stage('Update Helm values') {
+    stage('Update Helm Chart and Push') {
       steps {
-        sh '''
-          git config user.email "jenkins@example.com"
-          git config user.name "Jenkins"
-          python3 - <<'PY'
-import os, pathlib
-path = pathlib.Path('lesson-7/charts/django-app/values.yaml')
-text = path.read_text()
-text = text.replace('tag: "latest"', f'tag: "{os.environ["IMAGE_TAG"]}"')
-path.write_text(text)
-PY
-          git add lesson-7/charts/django-app/values.yaml
-          git commit -m "Update image tag to ${IMAGE_TAG}" || true
-          git push origin HEAD:main || true
-        '''
+        container('git') {
+          withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+            sh '''
+              git config --global user.email "jenkins@example.com"
+              git config --global user.name "Jenkins CI"
+              
+              # Оновлення тегу в values.yaml
+              sed -i "s/tag: .*/tag: \\"${IMAGE_TAG}\\"/" lesson-7/charts/django-app/values.yaml
+              
+              git add lesson-7/charts/django-app/values.yaml
+              git commit -m "Update image tag to ${IMAGE_TAG} [skip ci]"
+              
+              # Налаштування URL з кредами для пушу
+              # Видаляємо https:// щоб вставити крединшели
+              REPO_URL_WITHOUT_HTTPS=$(echo $GIT_REPO_URL | sed 's~https://~~')
+              git remote set-url origin https://${GIT_USER}:${GIT_PASS}@${REPO_URL_WITHOUT_HTTPS}
+              git push origin main
+            '''
+          }
+        }
       }
     }
   }

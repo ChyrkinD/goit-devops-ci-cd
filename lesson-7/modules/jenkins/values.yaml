@@ -1,14 +1,17 @@
 controller:
-  adminUser: "admin"
-  adminPassword: "admin123"
+  image:
+    tag: "lts-jdk17"
+  admin:
+    username: "admin"
+    password: "<set-me>"
   serviceType: LoadBalancer
   installPlugins:
-    - kubernetes:4203.v1d2f3e4b_9f2d
-    - workflow-aggregator:600.vb_57cdd3f5b_4e
-    - git:5.3.0
-    - credentials-binding:687.v4b_6f6d3b_0b_6a
-    - docker-workflow:580.vc5b_60ee0b_0f9
-    - blueocean:1.27.0
+    - kubernetes:latest
+    - workflow-aggregator:latest
+    - git:latest
+    - credentials-binding:latest
+    - docker-workflow:latest
+    - blueocean:latest
   resources:
     requests:
       cpu: 250m
@@ -32,5 +35,5 @@ controller:
                       scope: GLOBAL
                       id: "aws-creds"
                       username: "admin"
-                      password: "admin123"
+                      password: "<set-me>"
                       description: "AWS credentials"
