@@ -53,8 +53,8 @@ pipeline {
         container('kaniko') {
           sh '''
             /kaniko/executor \
-              --context `pwd`/lesson-7/django \
-              --dockerfile `pwd`/lesson-7/django/Dockerfile \
+              --context `pwd`/Django \
+              --dockerfile `pwd`/Django/Dockerfile \
               --destination ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
           '''
         }
@@ -70,9 +70,9 @@ pipeline {
               git config --global user.name "Jenkins CI"
               
               # Оновлення тегу в values.yaml
-              sed -i "s/tag: .*/tag: \\"${IMAGE_TAG}\\"/" lesson-7/charts/django-app/values.yaml
+              sed -i "s/tag: .*/tag: \\"${IMAGE_TAG}\\"/" charts/django-app/values.yaml
               
-              git add lesson-7/charts/django-app/values.yaml
+              git add charts/django-app/values.yaml
               git commit -m "Update image tag to ${IMAGE_TAG} [skip ci]"
               
               # Налаштування URL з кредами для пушу

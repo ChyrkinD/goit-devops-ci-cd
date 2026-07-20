@@ -1,96 +1,61 @@
-# CI/CD project for Django + EKS + Jenkins + Argo CD
+# Lesson 7 - EKS + ECR + Helm deployment for Django
 
-This repository contains a complete CI/CD setup for a Django application deployed to Amazon EKS with Jenkins, Helm, Terraform, and Argo CD.
+This folder contains Terraform modules, Jenkins/Argo CD installation assets, and a Helm chart to deploy the Django application to an EKS cluster.
 
-## 1. How to apply Terraform
+## What changed
 
-1. Go to the lesson-7 directory:
+- Added the EKS module to the Terraform root configuration.
+- Restored the S3 backend configuration for remote Terraform state.
+- Enabled private/public VPC endpoint access in the VPC module.
+- Made ECR encryption explicit with AES256.
+- Added CPU/memory requests and liveness/readiness/startup probes to the Helm chart.
+- Added Terraform modules for Jenkins and Argo CD.
+- Added a Jenkins pipeline definition and a simple Django container image scaffold.
 
+## Requirements
+
+- AWS CLI configured with credentials
+- kubectl and helm installed
+- Docker installed for building images
+- Terraform >= 1.5
+
+## Як застосувати Terraform
+
+1. Ініціалізація та застосування інфраструктури:
 ```bash
 cd lesson-7
-```
-
-2. Initialize Terraform:
-
-```bash
 terraform init
-```
-
-3. Review the planned infrastructure:
-
-```bash
 terraform plan
+terraform apply -auto-approve
 ```
 
-4. Apply the configuration:
+## Як перевірити Jenkins job
 
-```bash
-terraform apply
-```
+1. Увійдіть у веб-інтерфейс Jenkins, використовуючи дані (URL та пароль), які можна отримати з `terraform output`.
+2. Створіть новий Pipeline job (New Item -> Pipeline).
+3. В налаштуваннях job:
+   - Вкажіть `Pipeline script from SCM` (з Git).
+   - Вкажіть ваш Git-репозиторій, де зберігається код з цього завдання (`Jenkinsfile`).
+   - Налаштуйте Credentials для доступу до вашого Git (ідентифікатор: `github-credentials` з логіном та паролем/токеном Github).
+4. Запустіть збірку (Build Now).
+5. Пайплайн використовує Kaniko (в Kubernetes агенті) для збирання Docker образу з папки `django`, публікує його в AWS ECR та автоматично комітить оновлений тег (`charts/django-app/values.yaml`) у ваш Git-репозиторій.
 
-5. Get useful outputs:
+## Як побачити результат в Argo CD
 
-```bash
-terraform output
-```
+1. Отримайте пароль адміністратора та URL Argo CD з `terraform output`.
+2. Відкрийте Argo CD UI і увійдіть як `admin`.
+3. Оскільки Argo CD налаштовано через Helm Chart, він автоматично створить Application для `django-app`.
+4. Argo CD буде автоматично відслідковувати зміни у вашому Git-репозиторії. Після того як Jenkins оновить тег у `values.yaml` та зробить пуш, Argo CD підхопить зміни (через `syncPolicy.automated`) і оновить Deployment у кластері (EKS).
+5. Перевірте, що стан застосунку став `Healthy` та `Synced`.
 
-This will create the EKS cluster, ECR repository, Jenkins, and Argo CD resources.
+## Files of interest
 
-## 2. How to verify the Jenkins job
-
-1. Get the Jenkins URL from the service or from your cluster access point.
-2. Open Jenkins in the browser and log in with the admin credentials configured in the Helm values.
-3. Create a pipeline job that uses the included Jenkinsfile.
-4. Run the job manually and check the build log.
-
-Expected result:
-
-- The Docker image is built.
-- The image is pushed to ECR.
-- The Helm values file is updated with the new image tag.
-- The changes are committed and pushed to the Git branch.
-
-You can also verify the image in ECR:
-
-```bash
-aws ecr describe-images --repository-name lesson-5-ecr --region eu-north-1
-```
-
-## 3. How to see the result in Argo CD
-
-1. Open the Argo CD UI in your browser.
-2. Find the application entry created by the Argo CD Helm chart.
-3. Check that the application is in Sync and Healthy state.
-4. If the Git repository changes, Argo CD will automatically sync the new Helm chart values.
-
-You can also verify the deployed resources from the cluster:
-
-```bash
-kubectl get pods
-kubectl get svc
-kubectl get applications -n argocd
-```
-
-## 4. Typical workflow
-
-1. Jenkins builds and pushes a new image to ECR.
-2. Jenkins updates the image tag in the Helm chart values.
-3. Argo CD detects the Git change.
-4. Argo CD syncs the updated Helm chart into the cluster.
-
-This completes the CI/CD loop from code change to deployment.
-
-terraform fmt -recursive
-terraform init
-terraform validate
-![alt text](image.png)
-
-terraform plan
-![alt text](image-1.png)
-
-helm lint charts/django-app
-helm lint modules/argo_cd/charts
-![alt text](image-2.png)
-
-grep -R "admin123\|pass9764gd" --include="_.yaml" --include="_.tf" .
-![alt text](image-3.png)
+- main.tf - root Terraform wiring
+- backend.tf - S3 backend configuration for remote state
+- modules/ecr - creates the ECR repository with AES256 encryption
+- modules/eks - creates the EKS cluster and managed node group
+- modules/jenkins - installs Jenkins via Helm with Terraform
+- modules/argo_cd - installs Argo CD via Helm with Terraform
+- charts/django-app - Helm chart with Deployment, Service, ConfigMap, HPA, and probes
+- Jenkinsfile - CI pipeline for building, pushing, and updating the chart
+- django/ - simple Django application container scaffold

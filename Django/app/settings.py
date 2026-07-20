@@ -21,9 +21,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'django_project.urls'
+ROOT_URLCONF = 'app.urls'
 TEMPLATES = []
-WSGI_APPLICATION = 'django_project.wsgi.application'
+WSGI_APPLICATION = 'app.wsgi.application'
 DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3'}}
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'

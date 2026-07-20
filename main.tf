@@ -29,6 +29,12 @@ provider "helm" {
   }
 }
 
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  token                  = data.aws_eks_cluster_auth.cluster.token
+}
+
 # Підключаємо модуль для S3 та DynamoDB
 module "s3_backend" {
   source      = "./modules/s3-backend"
@@ -102,4 +108,9 @@ module "rds" {
 
   allocated_storage   = 20
   allowed_cidr_blocks = ["10.0.0.0/16"]
+}
+
+module "monitoring" {
+  source     = "./modules/monitoring"
+  depends_on = [module.eks]
 }
