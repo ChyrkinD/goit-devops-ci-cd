@@ -38,11 +38,11 @@ startupProbe:
   periodSeconds: 10
 
 env:
-  POSTGRES_HOST: "db"
+  POSTGRES_HOST: "" # Replace via CI/CD or use Kubernetes Secret
   POSTGRES_PORT: "5432"
-  POSTGRES_DB: "django_db"
-  POSTGRES_USER: "django_user"
-  POSTGRES_PASSWORD: "<set-me>"
+  POSTGRES_DB: "djangodb"
+  POSTGRES_USER: "dbadmin"
+  POSTGRES_PASSWORD: "" # Replace via CI/CD or use Kubernetes Secret
 
 hpa:
   enabled: true

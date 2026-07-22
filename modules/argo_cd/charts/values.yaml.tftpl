@@ -3,7 +3,7 @@ applications:
     namespace: default
     project: default
     source:
-      repoURL: https://github.com/example/argocd-demo.git
+      repoURL: ${git_repo_url}
       targetRevision: main
       path: charts/django-app
     destination:
@@ -15,7 +15,7 @@ applications:
         selfHeal: true
 repositories:
   - name: app-repo
-    url: https://github.com/example/argocd-demo.git
+    url: ${git_repo_url}
     username: ""
     password: ""
     insecure: false

@@ -21,6 +21,8 @@ data "aws_eks_cluster_auth" "cluster" {
   name = module.eks.cluster_name
 }
 
+data "aws_caller_identity" "current" {}
+
 provider "helm" {
   kubernetes {
     host                   = module.eks.cluster_endpoint
@@ -66,7 +68,7 @@ module "eks" {
   source                    = "./modules/eks"
   cluster_name              = "lesson-7-eks"
   vpc_id                    = module.vpc.vpc_id
-  subnet_ids                = concat(module.vpc.public_subnets, module.vpc.private_subnets)
+  subnet_ids                = module.vpc.private_subnets
   node_group_instance_types = ["t3.medium"]
   desired_size              = 2
   min_size                  = 2
@@ -79,6 +81,12 @@ module "jenkins" {
   namespace     = "ci"
   chart_version = "5.0.16"
 
+  jenkins_admin_password = var.jenkins_admin_password
+  aws_account_id         = data.aws_caller_identity.current.account_id
+  ecr_repository_url     = module.ecr.repository_url
+  git_repo_url           = var.git_repo_url
+  eks_oidc_provider_arn  = module.eks.oidc_provider_arn
+
   depends_on = [module.eks]
 }
 
@@ -86,6 +94,8 @@ module "argo_cd" {
   source        = "./modules/argo_cd"
   namespace     = "argocd"
   chart_version = "7.8.11"
+
+  git_repo_url = var.git_repo_url
 
   depends_on = [module.eks]
 }
@@ -97,7 +107,7 @@ module "rds" {
   use_aurora  = false
   db_name     = "djangodb"
   db_username = "dbadmin"
-  db_password = "SuperSecretPassword123!" # В реальному проєкті використовуйте Secrets Manager або змінні оточення
+  db_password = var.db_password
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
@@ -111,6 +121,7 @@ module "rds" {
 }
 
 module "monitoring" {
-  source     = "./modules/monitoring"
-  depends_on = [module.eks]
+  source                 = "./modules/monitoring"
+  grafana_admin_password = var.grafana_admin_password
+  depends_on             = [module.eks]
 }

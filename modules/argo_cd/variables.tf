@@ -7,5 +7,10 @@ variable "namespace" {
 variable "chart_version" {
   description = "Helm chart version for Argo CD"
   type        = string
-  default     = "7.8.11"
+  default     = "5.46.7"
+}
+
+variable "git_repo_url" {
+  description = "Git Repository URL"
+  type        = string
 }

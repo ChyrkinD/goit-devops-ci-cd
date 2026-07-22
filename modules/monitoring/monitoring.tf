@@ -16,7 +16,7 @@ resource "helm_release" "prometheus" {
   # Налаштування Grafana admin password (тут для прикладу базовий, в проді - secrets)
   set {
     name  = "grafana.adminPassword"
-    value = "admin"
+    value = var.grafana_admin_password
   }
 
   # Вимикаємо default rules, які можуть конфліктувати
@@ -29,4 +29,13 @@ resource "helm_release" "prometheus" {
     name  = "prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues"
     value = "false"
   }
+}
+
+# Встановлення metrics-server для роботи HPA
+resource "helm_release" "metrics_server" {
+  name       = "metrics-server"
+  repository = "https://kubernetes-sigs.github.io/metrics-server/"
+  chart      = "metrics-server"
+  namespace  = kubernetes_namespace_v1.monitoring.metadata[0].name
+  version    = "3.12.1"
 }

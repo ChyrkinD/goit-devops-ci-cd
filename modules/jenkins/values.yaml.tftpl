@@ -3,7 +3,7 @@ controller:
     tag: "lts-jdk17"
   admin:
     username: "admin"
-    password: "<set-me>"
+    password: "${jenkins_admin_password}"
   serviceType: LoadBalancer
   installPlugins:
     - kubernetes:latest
@@ -33,7 +33,18 @@ controller:
                 credentials:
                   - usernamePassword:
                       scope: GLOBAL
-                      id: "aws-creds"
-                      username: "admin"
-                      password: "<set-me>"
-                      description: "AWS credentials"
+                      id: "github-credentials"
+                      username: "jenkins"
+                      password: ""
+                      description: "GitHub Credentials"
+      global-env: |
+        unclassified:
+          globalNodeProperties:
+            envVars:
+              env:
+                - key: "AWS_ACCOUNT_ID"
+                  value: "${aws_account_id}"
+                - key: "ECR_REPOSITORY_URL"
+                  value: "${ecr_repository_url}"
+                - key: "GIT_REPO_URL"
+                  value: "${git_repo_url}"
